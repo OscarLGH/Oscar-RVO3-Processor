@@ -1,3 +1,5 @@
+`include "riscv-defines.v"
+
 module id (
 	input wire rst,
 	input wire[63:0] pc,
@@ -50,9 +52,13 @@ module id (
 			imm <= 64'b0;
 		end
 
-		if (opcode == 7'b0110011) begin
-			alusel_o <= funct3;
-		end
+		/* R-type */
+		case (opcode)
+			`RISCV_OPCODE_OP: begin
+				alusel_o <= funct3;
+			end
+		endcase
+			
 	end
 
 endmodule
