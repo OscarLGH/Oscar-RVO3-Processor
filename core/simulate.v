@@ -2,11 +2,13 @@ module test_bench;
 
 	reg clock;
 	reg rst;
-	wire ce;
-	wire [63:0] if_pc;
-	wire [63:0] id_pc;
-	wire [31:0] inst_if;
-	wire [32:0] inst_id;
+	wire inst_valid;
+	wire[63:0] inst_addr;
+	wire[31:0] inst_data;
+	wire rw;
+	wire data_valid;
+	wire[63:0] data_addr;
+	wire[63:0] data;
 
 initial begin
 	clock = 1'b0;
@@ -20,20 +22,20 @@ initial begin
 	#1000 $stop;
 end
 
-pc_reg pc_reg_tb (
+assign inst_data = 32'b00000000001000001000000010110011;
+
+cpu_core cpu_core_sim (
 	.clk(clock),
 	.rst(rst),
-	.pc(if_pc),
-	.ce(ce)
+	.inst_mem_addr(inst_addr),
+	.inst_mem_valid(inst_valid),
+	.inst_mem_data(inst_data),
+	
+	.data_mem_rw(rw),
+	.data_mem_addr(data_addr),
+	.data_mem_valid(data_valid),
+	.data_mem_data(data)
 );
 
-if_id if_id_tb (
-	.clk(clock),
-	.rst(rst),
-	.if_pc(if_pc),
-	.if_inst(inst_if),
-	.id_pc(id_pc),
-	.id_inst(inst_id)
-);
 
 endmodule

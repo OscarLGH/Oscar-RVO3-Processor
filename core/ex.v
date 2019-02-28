@@ -4,8 +4,8 @@ module ex (
 	input wire rst,
 	input wire[63:0] oprand1,
 	input wire[63:0] oprand2,
-	input reg[7:0] aluop_i,
-	input reg[4:0] alusel_i,
+	input reg[7:0] aluop,
+	input reg[3:0] alusel,
 	output reg[63:0] result
 );
 
@@ -13,7 +13,7 @@ module ex (
 		if (rst == 1'b1) begin
 			result <= 64'b0;
 		end else begin
-			case (alusel_i)
+			case (alusel)
 				`RISCV_ALU_ADD: begin
 					result <= oprand1 + oprand2;
 				end

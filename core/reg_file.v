@@ -13,7 +13,7 @@ module reg_file (
 );
 
 	reg [63:0] reg_file[31:0];
-
+	integer i;
 	/* Reading regfile is a combinational logic operation because
 	* we need to get oprand in 1 clock cycle.
 	*/
@@ -21,6 +21,9 @@ module reg_file (
 		if (rst == 1'b1) begin
 			rdata1 <= 64'b0;
 			rdata2 <= 64'b0;
+			for (i = 0; i < 32; i = i + 1) begin
+				reg_file[i] <= i;
+			end
 		end
 	end
 
