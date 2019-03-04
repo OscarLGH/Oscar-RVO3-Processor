@@ -22,7 +22,12 @@ initial begin
 	#1000 $stop;
 end
 
-assign inst_data = 32'b00000000001000001000000010110011;
+//assign inst_data = 32'b00000000001000001000000010110011;
+inst_rom inst_rom_sim (
+	.ce(inst_valid),
+	.addr(inst_addr),
+	.inst(inst_data)
+);
 
 cpu_core cpu_core_sim (
 	.clk(clock),
