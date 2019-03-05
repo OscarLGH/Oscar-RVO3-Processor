@@ -12,6 +12,14 @@ module id (
 	output reg[4:0] reg1_addr,
 	output reg[4:0] reg2_addr,
 
+	/* forwarding logic */
+	input wire reg_wr_enable_ex,
+	input wire[4:0] reg_wr_addr_ex,
+	input wire[63:0] reg_wr_data_ex,
+	input wire reg_wr_enable_mem,
+	input wire[4:0] reg_wr_addr_mem,
+	input wire[63:0] reg_wr_data_mem,
+
 	output reg[7:0] aluop_o,
 	output reg[3:0] alusel_o,
 	output reg[63:0] oprand1,
@@ -49,11 +57,26 @@ module id (
 					reg2_read_enable <= 1'b1;
 					reg_write_enable_o <= 1'b1;
 					alusel_o <= {funct7[5], funct3[2:0]};
-					reg1_addr <= rs1;
-					reg2_addr <= rs2;
+					if (reg_wr_enable_ex == 1'b1 && reg1_addr == reg_wr_addr_ex) begin
+						oprand1 <= reg_wr_data_ex;
+					end else if (reg_wr_enable_mem == 1'b1 && reg1_addr == reg_wr_addr_mem) begin
+						oprand1 <= reg_wr_data_mem;
+					end else begin
+						reg1_addr <= rs1;
+						oprand1 <= reg1_data;
+					end
+
+					if (reg_wr_enable_ex == 1'b1 && reg2_addr == reg_wr_addr_ex) begin
+						oprand2 <= reg_wr_data_ex;
+					end else if (reg_wr_enable_mem == 1'b1 && reg2_addr == reg_wr_addr_mem) begin
+						oprand2 <= reg_wr_data_mem;
+					end else begin
+						reg2_addr <= rs2;
+						oprand2 <= reg2_data;
+					end
+
 					reg_write_addr_o <= rd;
-					oprand1 <= reg1_data;
-					oprand2 <= reg2_data;
+
 				end
 				`RISCV_OPCODE_LUI: begin
 					alusel_o <= 5'b0;

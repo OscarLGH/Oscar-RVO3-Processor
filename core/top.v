@@ -46,6 +46,14 @@ module cpu_core (
 	wire mem_valid_id;
 	wire mem_rw_id;
 
+	wire[4:0] reg_write_addr_ex;
+	wire reg_write_enable_ex;
+	wire[63:0] result_ex;
+
+	wire[63:0] result_mem;
+	wire[4:0] reg_write_addr_mem;
+	wire reg_write_enable_mem;
+
 	id instruction_decode(
 		.rst(rst),
 		.inst(id_inst),
@@ -55,6 +63,14 @@ module cpu_core (
 		.reg2_read_enable(reg2_read_enable),
 		.reg1_addr(reg1_addr),
 		.reg2_addr(reg2_addr),
+
+		/* forwarding logic */
+		.reg_wr_enable_ex(reg_write_enable_ex),
+		.reg_wr_addr_ex(reg_write_addr_ex),
+		.reg_wr_data_ex(result_ex),
+		.reg_wr_enable_mem(reg_write_enable_mem),
+		.reg_wr_addr_mem(reg_write_addr_mem),
+		.reg_wr_data_mem(result_mem),
 
 		.aluop_o(aluop_id),
 		.alusel_o(alusel_id),
@@ -87,8 +103,6 @@ module cpu_core (
 	wire[3:0] alusel_ex;
 	wire[63:0] oprand1_ex;
 	wire[63:0] oprand2_ex;
-	wire[4:0] reg_write_addr_ex;
-	wire reg_write_enable_ex;
 	wire mem_valid_ex;
 	wire mem_rw_ex;
 
@@ -113,8 +127,6 @@ module cpu_core (
 		.mem_rw_o(mem_rw_ex)
 	);
 
-	wire[63:0] result_ex;
-
 	ex execution(
 		.rst(rst),
 		.oprand1(oprand1_ex),
@@ -126,10 +138,6 @@ module cpu_core (
 
 	wire mem_valid_mem;
 	wire mem_rw_mem;
-	wire[63:0] result_mem;
-	wire[4:0] reg_write_addr_mem;
-	wire reg_write_enable_mem;
-
 	
 	ex_mem ex_mem_reg(
 		.clk(clk),
