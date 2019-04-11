@@ -10,6 +10,8 @@ module id_ex (
 	input wire reg_write_enable_i,
 	input wire mem_valid_i,
 	input wire mem_rw_i,
+
+	input wire stall,
 	
 	output reg[7:0] aluop_o,
 	output reg[3:0] alusel_o,
@@ -22,7 +24,7 @@ module id_ex (
 );
 
 	always @ (posedge clk) begin
-		if (rst == 1'b1) begin
+		if (rst == 1'b1 || stall == 1'b1) begin
 			aluop_o <= 8'b0;
 			alusel_o <= 3'b0;
 			oprand1_o <= 64'b0;

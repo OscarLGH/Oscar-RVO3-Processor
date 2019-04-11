@@ -3,6 +3,7 @@ module cpu_core (
 	input wire rst,
 
 	output wire[63:0] inst_mem_addr,
+	output wire inst_addr_valid,
 	input wire inst_mem_valid,
 	input wire[31:0] inst_mem_data,
 	
@@ -12,11 +13,25 @@ module cpu_core (
 	inout wire[63:0] data_mem_data
 );
 
+	wire [4:0] stall_req;
+	wire [4:0] stall_sig;
+	wire stall_pc;
+	wire [4:0] test;
+
+	assign stall_req[0] = ~inst_mem_valid;
+	pipeline_ctrl pipe_ctrl(
+		.rst(rst),
+		.stall_req(stall_req),
+		.stall(stall_sig),
+		.pc_stall(stall_pc)
+	);
+
 	pc_reg instruction_fetch(
 		.clk(clk),
 		.rst(rst),
+		.stall(stall_pc),
 		.pc(inst_mem_addr),
-		.ce(inst_mem_valid)
+		.ce(inst_addr_valid)
 	);
 
 	wire[63:0] id_pc;
@@ -24,6 +39,7 @@ module cpu_core (
 	if_id if_id_reg(
 		.clk(clk),
 		.rst(rst),
+		.stall(stall_sig[0]),
 		.if_pc(inst_mem_addr),
 		.if_inst(inst_mem_data),
 		.id_pc(id_pc),
@@ -63,6 +79,7 @@ module cpu_core (
 		.reg2_read_enable(reg2_read_enable),
 		.reg1_addr(reg1_addr),
 		.reg2_addr(reg2_addr),
+		.stall(stall_req[1]),
 
 		/* forwarding logic */
 		.reg_wr_enable_ex(reg_write_enable_ex),
@@ -117,6 +134,7 @@ module cpu_core (
 		.reg_write_enable_i(reg_write_enable_id),
 		.mem_valid_i(mem_valid_id_ex),
 		.mem_rw_i(mem_rw_id_ex),
+		.stall(stall_sig[1]),
 		.aluop_o(aluop_ex),
 		.alusel_o(alusel_ex),
 		.oprand1_o(oprand1_ex),
@@ -133,7 +151,8 @@ module cpu_core (
 		.oprand2(oprand2_ex),
 		.aluop(aluop_ex),
 		.alusel(alusel_ex),
-		.result(result_ex)
+		.result(result_ex),
+		.stall(stall_req[2])
 	);
 
 	wire mem_valid_mem;
@@ -147,6 +166,7 @@ module cpu_core (
 		.reg_write_enable_i(reg_write_enable_ex),
 		.mem_valid_i(mem_valid_ex),
 		.mem_rw_i(mem_rw_ex),
+		.stall(stall_sig[2]),
 		.result_o(result_mem),
 		.reg_write_addr_o(reg_write_addr_mem),
 		.reg_write_enable_o(reg_write_enable_mem),
@@ -160,6 +180,7 @@ module cpu_core (
 		.result_i(result_mem),
 		.reg_write_addr_i(reg_write_addr_mem),
 		.reg_write_enable_i(reg_write_enable_mem),
+		.stall(stall_sig[3]),
 		.result_o(result_wb),
 		.reg_write_addr_o(reg_write_addr_wb),
 		.reg_write_enable_o(reg_write_enable_wb)

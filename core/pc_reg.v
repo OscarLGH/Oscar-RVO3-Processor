@@ -1,6 +1,7 @@
 module pc_reg (
 	input wire clk,
 	input wire rst,
+	input wire stall,
 	output reg[63:0] pc,
 	output reg ce
 );
@@ -16,7 +17,7 @@ module pc_reg (
 	always @ (posedge clk) begin
 		if (ce == 0) begin
 			pc <= 64'b0;
-		end else begin
+		end else if (stall != 1'b1) begin
 			pc <= pc + 4;
 		end
 	end

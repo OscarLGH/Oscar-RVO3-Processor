@@ -6,12 +6,14 @@ module ex (
 	input wire[63:0] oprand2,
 	input reg[7:0] aluop,
 	input reg[3:0] alusel,
-	output reg[63:0] result
+	output reg[63:0] result,
+	output reg stall
 );
 
 	always @ (*) begin
 		if (rst == 1'b1) begin
 			result <= 64'b0;
+			stall <= 1'b0;
 		end else begin
 			case (alusel)
 				`RISCV_ALU_ADD: begin

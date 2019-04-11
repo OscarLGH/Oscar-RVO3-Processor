@@ -12,6 +12,9 @@ module id (
 	output reg[4:0] reg1_addr,
 	output reg[4:0] reg2_addr,
 
+	/* request stall */
+	output reg stall,
+
 	/* forwarding logic */
 	input wire reg_wr_enable_ex,
 	input wire[4:0] reg_wr_addr_ex,
@@ -49,6 +52,7 @@ module id (
 			reg1_addr <= 5'b0;
 			reg2_addr <= 5'b0;
 			imm <= 64'b0;
+			stall <= 1'b0;
 		end else begin
 			/* R-type */
 			case (opcode)

@@ -29,7 +29,9 @@ module reg_file (
 
 	always @ (*) begin
 		if (read1_enable == 1'b1) begin
-			if (raddr1 == waddr) begin
+			if (raddr1 == 5'b00000) begin
+				rdata1 <= 64'b0;
+			end else if (raddr1 == waddr) begin
 				rdata1 <= wdata;
 			end else begin
 				rdata1 <= reg_file[raddr1];
@@ -38,14 +40,16 @@ module reg_file (
 	end
 
 	always @ (*) begin
-                if (read2_enable == 1'b1) begin
-                        if (raddr2 == waddr) begin
-                                rdata2 <= wdata;
-                        end else begin
-                                rdata2 <= reg_file[raddr2];
-                        end
-                end
+        if (read2_enable == 1'b1) begin
+        	if (raddr2 == 5'b00000) begin
+				rdata2 <= 64'b0;
+            end else if (raddr2 == waddr) begin
+				rdata2 <= wdata;
+            end else begin
+				rdata2 <= reg_file[raddr2];
+            end
         end
+	end
 
 	/* Writing regfile is a sequencial logic operation
 	* since there can't be a loop between reading and writing reg. 
@@ -53,7 +57,9 @@ module reg_file (
 
 	always @ (posedge clk) begin
 		if (write_enable == 1'b1) begin
-			reg_file[waddr] <= wdata;
+			if (waddr != 5'b0) begin
+				reg_file[waddr] <= wdata;
+			end
 		end
 	end
 
