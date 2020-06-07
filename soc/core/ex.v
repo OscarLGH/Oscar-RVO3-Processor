@@ -4,8 +4,8 @@ module ex (
 	input wire rst,
 	input wire[63:0] oprand1,
 	input wire[63:0] oprand2,
-	input reg[7:0] aluop,
-	input reg[3:0] alusel,
+	input wire[7:0] aluop,
+	input wire[3:0] alusel,
 	output reg[63:0] result,
 	output reg stall
 );

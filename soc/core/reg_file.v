@@ -17,16 +17,15 @@ module reg_file (
 	/* Reading regfile is a combinational logic operation because
 	* we need to get oprand in 1 clock cycle.
 	*/
+/*
 	always @ (*) begin
 		if (rst == 1'b1) begin
-			rdata1 <= 64'b0;
-			rdata2 <= 64'b0;
 			for (i = 0; i < 32; i = i + 1) begin
 				reg_file[i] <= i;
 			end
 		end
 	end
-
+*/
 	always @ (*) begin
 		if (read1_enable == 1'b1) begin
 			if (raddr1 == 5'b00000) begin
@@ -56,6 +55,12 @@ module reg_file (
 	*/
 
 	always @ (posedge clk) begin
+	    if (rst == 1'b1) begin
+			for (i = 0; i < 32; i = i + 1) begin
+				reg_file[i] <= 0;
+			end
+		end
+
 		if (write_enable == 1'b1) begin
 			if (waddr != 5'b0) begin
 				reg_file[waddr] <= wdata;

@@ -1,6 +1,6 @@
 module pipeline_ctrl (
 	input wire rst,
-	input reg[4:0] stall_req,
+	input wire[4:0] stall_req,
 	output reg[4:0] stall,
 	output reg pc_stall
 );

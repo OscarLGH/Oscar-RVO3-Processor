@@ -33,12 +33,14 @@ module id (
 	output reg mem_rw
 );
 
-	wire [6:0] opcode = inst[6:0];
-	wire [4:0] rd = inst[11:7];
-	wire [2:0] funct3 = inst[14:12];
-	wire [4:0] rs1 = inst[19:15];
-	wire [4:0] rs2 = inst[25:20];
-	wire [6:0] funct7 = inst[31:26];
+	wire [6:0] opcode = inst[6:0];             /* common */
+	wire [4:0] rd = inst[11:7];                /* R/I/U/J-type */
+	wire [2:0] funct3 = inst[14:12];           /* R/I/S/B-type */
+	wire [4:0] rs1 = inst[19:15];              /* R/I/S/B-type */
+	wire [4:0] rs2 = inst[25:20];              /* R/S/B-type */
+	wire [6:0] funct7 = inst[31:26];           /* R-type */
+	
+	
 	reg [63:0] imm;
 
 	always @ (*) begin
@@ -54,25 +56,25 @@ module id (
 			imm <= 64'b0;
 			stall <= 1'b0;
 		end else begin
-			/* R-type */
 			case (opcode)
+                /* R-type */
 				`RISCV_OPCODE_OP: begin
 					reg1_read_enable <= 1'b1;
 					reg2_read_enable <= 1'b1;
 					reg_write_enable_o <= 1'b1;
 					alusel_o <= {funct7[5], funct3[2:0]};
-					if (reg_wr_enable_ex == 1'b1 && reg1_addr == reg_wr_addr_ex) begin
+					if (reg_wr_enable_ex == 1'b1 && rs1 == reg_wr_addr_ex) begin
 						oprand1 <= reg_wr_data_ex;
-					end else if (reg_wr_enable_mem == 1'b1 && reg1_addr == reg_wr_addr_mem) begin
+					end else if (reg_wr_enable_mem == 1'b1 && rs1 == reg_wr_addr_mem) begin
 						oprand1 <= reg_wr_data_mem;
 					end else begin
 						reg1_addr <= rs1;
 						oprand1 <= reg1_data;
 					end
 
-					if (reg_wr_enable_ex == 1'b1 && reg2_addr == reg_wr_addr_ex) begin
+					if (reg_wr_enable_ex == 1'b1 && rs2 == reg_wr_addr_ex) begin
 						oprand2 <= reg_wr_data_ex;
-					end else if (reg_wr_enable_mem == 1'b1 && reg2_addr == reg_wr_addr_mem) begin
+					end else if (reg_wr_enable_mem == 1'b1 && rs2 == reg_wr_addr_mem) begin
 						oprand2 <= reg_wr_data_mem;
 					end else begin
 						reg2_addr <= rs2;
@@ -82,12 +84,31 @@ module id (
 					reg_write_addr_o <= rd;
 
 				end
+				/* U-type */
 				`RISCV_OPCODE_LUI: begin
 					alusel_o <= 5'b0;
 					reg1_read_enable <= 1'b0;
 					reg2_read_enable <= 1'b0;
 					oprand1 <= inst[31:12];
 					oprand2 <= 64'b0;
+					reg_write_addr_o <= rd;
+				end
+				/* I-type */
+				`RISCV_OPCODE_OP_IMM: begin
+				    reg1_read_enable <= 1'b1;
+					reg2_read_enable <= 1'b0;
+					reg_write_enable_o <= 1'b1;
+					alusel_o <= {1'b0, funct3[2:0]};
+					if (reg_wr_enable_ex == 1'b1 && rs1 == reg_wr_addr_ex) begin
+						oprand1 <= reg_wr_data_ex;
+					end else if (reg_wr_enable_mem == 1'b1 && rs1 == reg_wr_addr_mem) begin
+						oprand1 <= reg_wr_data_mem;
+					end else begin
+						reg1_addr <= rs1;
+						oprand1 <= reg1_data;
+					end
+                    /* sign extended immediate */
+					oprand2 <= {{20{inst[31]}}, inst[31:20]};
 					reg_write_addr_o <= rd;
 				end
 			endcase

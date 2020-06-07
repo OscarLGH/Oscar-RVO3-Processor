@@ -1,5 +1,6 @@
 module cpu_core (
 	input wire clk,
+	input wire debug_clk,
 	input wire rst,
 
 	output wire[63:0] inst_mem_addr,
@@ -186,5 +187,15 @@ module cpu_core (
 		.reg_write_enable_o(reg_write_enable_wb)
 	);
 
+    ila_0 ila_debug (
+	.clk(debug_clk), // input wire clk
+	.probe0(inst_mem_data), // input wire [31:0]  probe0  
+	.probe1(result_ex), // input wire [63:0]  probe1 
+	.probe2(result_mem), // input wire [63:0]  probe2 
+	.probe3(result_wb), // input wire [63:0]  probe3
+	.probe4(clk),
+	.probe5(rst),
+	.probe6(inst_mem_addr)
+);
 
 endmodule
