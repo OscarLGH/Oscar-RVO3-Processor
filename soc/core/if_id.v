@@ -9,7 +9,7 @@ module if_id(
 );
 
 	always @ (posedge clk) begin
-		if (rst == 1'b1 || stall == 1'b1) begin
+		if (rst == 1'b1) begin
 			id_pc <= 64'b0;
 			id_inst <= 32'b0;
 		end else begin

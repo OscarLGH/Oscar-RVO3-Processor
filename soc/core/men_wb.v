@@ -11,11 +11,11 @@ module mem_wb (
 );
 
 	always @(posedge clk) begin
-		if (rst == 1'b1 || stall == 1'b1) begin
+		if (rst == 1'b1) begin
 			result_o <= 64'b0;
 			reg_write_addr_o <= 5'b0;
 			reg_write_enable_o <= 1'b0;
-		end else begin
+		end else if (stall != 1'b1) begin
 			result_o <= result_i;
 			reg_write_addr_o <= reg_write_addr_i;
 			reg_write_enable_o <= reg_write_enable_i;

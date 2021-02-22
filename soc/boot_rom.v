@@ -23,7 +23,7 @@ module inst_rom(
 	blk_mem_gen_0 inst_rom_0 (
   		.clka(clk),    // input wire clka
   		.ena(ce),      // input wire ena
-  		.addra(addr[11:0]),  // input wire [11 : 0] addra
+  		.addra({{8'b0},addr[3:0]}),  // input wire [11 : 0] addra
   		.douta(inst)  // output wire [31 : 0] douta
 	);
 

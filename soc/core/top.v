@@ -11,7 +11,7 @@ module cpu_core (
 	output wire data_mem_rw,
 	output wire[63:0] data_mem_addr,
 	input wire data_mem_valid,
-	inout wire[63:0] data_mem_data
+	output wire[63:0] data_mem_data
 );
 
 	wire [4:0] stall_req;
@@ -27,12 +27,15 @@ module cpu_core (
 		.pc_stall(stall_pc)
 	);
 
+    wire [31:0] inst;
 	pc_reg instruction_fetch(
 		.clk(clk),
 		.rst(rst),
 		.stall(stall_pc),
 		.pc(inst_mem_addr),
-		.ce(inst_addr_valid)
+		.ce(inst_addr_valid),
+		.inst_mem(inst_mem_data),
+		.inst_out(inst)
 	);
 
 	wire[63:0] id_pc;
@@ -42,7 +45,7 @@ module cpu_core (
 		.rst(rst),
 		.stall(stall_sig[0]),
 		.if_pc(inst_mem_addr),
-		.if_inst(inst_mem_data),
+		.if_inst(inst),
 		.id_pc(id_pc),
 		.id_inst(id_inst)
 	);
@@ -62,6 +65,8 @@ module cpu_core (
 	wire reg_write_enable_id;
 	wire mem_valid_id;
 	wire mem_rw_id;
+	wire[63:0] mem_data_id;
+	wire[7:0] mem_data_byte_valid_id;
 
 	wire[4:0] reg_write_addr_ex;
 	wire reg_write_enable_ex;
@@ -97,7 +102,9 @@ module cpu_core (
 		.reg_write_addr_o(reg_write_addr_id),
 		.reg_write_enable_o(reg_write_enable_id),
 		.mem_valid(mem_valid_id),
-		.mem_rw(mem_rw_id)
+		.mem_rw(mem_rw_id),
+		.mem_data(mem_data_id),
+		.mem_data_byte_valid(mem_data_byte_valid_id)
 	);
 
 	wire[63:0] result_wb;
@@ -123,6 +130,8 @@ module cpu_core (
 	wire[63:0] oprand2_ex;
 	wire mem_valid_ex;
 	wire mem_rw_ex;
+	wire[63:0] mem_data_ex;
+	wire[7:0] mem_data_byte_valid_ex;
 
 	id_ex id_ex_reg(
 		.clk(clk),
@@ -133,8 +142,10 @@ module cpu_core (
 		.oprand2_i(oprand2_id),
 		.reg_write_addr_i(reg_write_addr_id),
 		.reg_write_enable_i(reg_write_enable_id),
-		.mem_valid_i(mem_valid_id_ex),
-		.mem_rw_i(mem_rw_id_ex),
+		.mem_valid_i(mem_valid_id),
+		.mem_rw_i(mem_rw_id),
+		.mem_data_i(mem_data_id),
+		.mem_data_byte_valid_i(mem_data_byte_valid_id),
 		.stall(stall_sig[1]),
 		.aluop_o(aluop_ex),
 		.alusel_o(alusel_ex),
@@ -143,7 +154,9 @@ module cpu_core (
 		.reg_write_addr_o(reg_write_addr_ex),
 		.reg_write_enable_o(reg_write_enable_ex),
 		.mem_valid_o(mem_valid_ex),
-		.mem_rw_o(mem_rw_ex)
+		.mem_rw_o(mem_rw_ex),
+		.mem_data_o(mem_data_ex),
+		.mem_data_byte_valid_o(mem_data_byte_valid_ex)
 	);
 
 	ex execution(
@@ -155,9 +168,11 @@ module cpu_core (
 		.result(result_ex),
 		.stall(stall_req[2])
 	);
-
+	
 	wire mem_valid_mem;
 	wire mem_rw_mem;
+	wire[63:0] mem_data_mem;
+	wire[7:0] mem_data_byte_valid_mem;
 	
 	ex_mem ex_mem_reg(
 		.clk(clk),
@@ -167,18 +182,36 @@ module cpu_core (
 		.reg_write_enable_i(reg_write_enable_ex),
 		.mem_valid_i(mem_valid_ex),
 		.mem_rw_i(mem_rw_ex),
+		.mem_data_i(mem_data_ex),
+		.mem_data_byte_valid_i(mem_data_byte_valid_ex),
 		.stall(stall_sig[2]),
 		.result_o(result_mem),
 		.reg_write_addr_o(reg_write_addr_mem),
 		.reg_write_enable_o(reg_write_enable_mem),
 		.mem_valid_o(mem_valid_mem),
-		.mem_rw_o(mem_rw_mem)
+		.mem_rw_o(mem_rw_mem),
+		.mem_data_o(mem_data_mem),
+		.mem_data_byte_valid_o(mem_data_byte_valid_mem)
+	);
+	
+	wire [63:0] result_mem_1;
+	mem mem(
+	    .clk(clk),
+	    .rst(rst),
+	    .mem_valid(mem_valid_mem),
+	    .mem_rw(mem_rw_mem),
+	    .mem_data(mem_data_mem),
+	    .mem_data_byte_valid(mem_data_byte_valid_mem),
+	    .addr(result_mem),
+	    
+	    .result(result_mem_1),
+	    .stall(stall_req[3])
 	);
 
 	mem_wb mem_wb_reg(
 		.clk(clk),
 		.rst(rst),
-		.result_i(result_mem),
+		.result_i(result_mem_1),
 		.reg_write_addr_i(reg_write_addr_mem),
 		.reg_write_enable_i(reg_write_enable_mem),
 		.stall(stall_sig[3]),
@@ -188,14 +221,71 @@ module cpu_core (
 	);
 
     ila_0 ila_debug (
-	.clk(debug_clk), // input wire clk
-	.probe0(inst_mem_data), // input wire [31:0]  probe0  
-	.probe1(result_ex), // input wire [63:0]  probe1 
-	.probe2(result_mem), // input wire [63:0]  probe2 
-	.probe3(result_wb), // input wire [63:0]  probe3
-	.probe4(clk),
-	.probe5(rst),
-	.probe6(inst_mem_addr)
-);
+        .clk(debug_clk), // input wire clk
+        .probe0(clk),
+        .probe1(rst),
+        .probe2(stall_sig[0]),
+        .probe3(inst_mem_addr),
+        .probe4(inst),
+        .probe5(id_pc),
+        .probe6(id_inst),
+        .probe7(aluop_id),
+        .probe8(alusel_id),
+        .probe9(oprand1_id),
+        .probe10(oprand2_id),
+        .probe11(reg_write_addr_id),
+        .probe12(reg_write_enable_id),
+        .probe13(mem_valid_id),
+        .probe14(mem_rw_id),
+        .probe15(mem_data_id),
+        .probe16(mem_data_byte_valid_id),
+        .probe17(stall_sig[1]),
+        .probe18(aluop_ex),
+        .probe19(alusel_ex),
+        .probe20(oprand1_ex),
+        .probe21(oprand2_ex),
+        .probe22(reg_write_addr_ex),
+        .probe23(reg_write_enable_ex),
+        .probe24(mem_valid_ex),
+        .probe25(mem_rw_ex),
+        .probe26(mem_data_ex),
+        .probe27(mem_data_byte_valid_ex),
+        .probe28(result_ex),
+        .probe29(stall_sig[2]),
+        .probe30(result_mem),
+        .probe31(reg_write_addr_mem),
+        .probe32(reg_write_enable_mem),
+        .probe33(mem_valid_mem),
+        .probe34(mem_rw_mem),
+        .probe35(mem_data_mem),
+        .probe36(mem_data_byte_valid_mem),
+        .probe37(stall_sig[3]),
+        .probe38(result_wb),
+        .probe39(reg_write_addr_wb),
+        .probe40(reg_write_enable_wb),
+        .probe41(64'b0),
+        .probe42(64'b0),
+        .probe43(64'b0),
+        .probe44(64'b0),
+        .probe45(64'b0),
+        .probe46(64'b0),
+        .probe47(64'b0),
+        .probe48(64'b0),
+        .probe49(64'b0),
+        .probe50(64'b0),
+        .probe51(64'b0),
+        .probe52(64'b0),
+        .probe53(64'b0),
+        .probe54(64'b0),
+        .probe55(64'b0),
+        .probe56(64'b0),
+        .probe57(64'b0),
+        .probe58(64'b0),
+        .probe59(64'b0),
+        .probe60(64'b0),
+        .probe61(64'b0),
+        .probe62(64'b0),
+        .probe63(64'b0)
+    );
 
 endmodule

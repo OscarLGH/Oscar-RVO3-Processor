@@ -30,7 +30,9 @@ module id (
 	output reg[4:0] reg_write_addr_o,
 	output reg reg_write_enable_o,
 	output reg mem_valid,
-	output reg mem_rw
+	output reg mem_rw,
+	output reg[63:0] mem_data,
+	output reg[7:0] mem_data_byte_valid
 );
 
 	wire [6:0] opcode = inst[6:0];             /* common */
@@ -55,6 +57,10 @@ module id (
 			reg2_addr <= 5'b0;
 			imm <= 64'b0;
 			stall <= 1'b0;
+			mem_valid <= 1'b0;
+		    mem_rw <= 1'b0;
+		    oprand1 <= 64'b0;
+			oprand2 <= 64'b0;
 		end else begin
 			case (opcode)
                 /* R-type */
@@ -82,6 +88,10 @@ module id (
 					end
 
 					reg_write_addr_o <= rd;
+					
+					mem_valid <= 1'b0;
+				    mem_rw <= 1'b0;
+				    mem_data_byte_valid <= 8'b0;
 
 				end
 				/* U-type */
@@ -92,6 +102,11 @@ module id (
 					oprand1 <= inst[31:12];
 					oprand2 <= 64'b0;
 					reg_write_addr_o <= rd;
+					
+					mem_valid <= 1'b0;
+				    mem_rw <= 1'b0;
+				    mem_data_byte_valid <= 8'b0;
+
 				end
 				/* I-type */
 				`RISCV_OPCODE_OP_IMM: begin
@@ -108,8 +123,99 @@ module id (
 						oprand1 <= reg1_data;
 					end
                     /* sign extended immediate */
-					oprand2 <= {{20{inst[31]}}, inst[31:20]};
+					oprand2 <= {{52{inst[31]}}, inst[31:20]};
 					reg_write_addr_o <= rd;
+					
+					mem_valid <= 1'b0;
+				    mem_rw <= 1'b0;
+				    mem_data_byte_valid <= 8'b0;
+
+				end
+				`RISCV_OPCODE_STORE: begin
+			        reg1_read_enable <= 1'b1;
+					reg2_read_enable <= 1'b1;
+					reg_write_enable_o <= 1'b0;
+					alusel_o <= 3'b0;
+					
+					if (reg_wr_enable_ex == 1'b1 && rs1 == reg_wr_addr_ex) begin
+						oprand1 <= reg_wr_data_ex;
+					end else if (reg_wr_enable_mem == 1'b1 && rs1 == reg_wr_addr_mem) begin
+						oprand1 <= reg_wr_data_mem;
+					end else begin
+						reg1_addr <= rs1;
+						oprand1 <= reg1_data;
+					end
+					
+					if (reg_wr_enable_ex == 1'b1 && rs2 == reg_wr_addr_ex) begin
+						mem_data <= reg_wr_data_ex;
+					end else if (reg_wr_enable_mem == 1'b1 && rs2 == reg_wr_addr_mem) begin
+						mem_data <= reg_wr_data_mem;
+					end else begin
+						reg2_addr <= rs2;
+						mem_data <= reg2_data;
+					end
+
+				    mem_valid <= 1'b1;
+				    mem_rw <= 1'b1;
+				    case (funct3)
+				        3'b000: begin
+				            mem_data_byte_valid = 8'b00000001;
+				        end
+				        3'b001:begin
+				            mem_data_byte_valid = 8'b00000011;
+				        end
+				        3'b010:begin
+				            mem_data_byte_valid = 8'b00001111;
+				        end
+				        3'b011:begin
+				            mem_data_byte_valid = 8'b11111111;
+				        end
+				        default:begin
+				            mem_data_byte_valid = 8'b00000001;
+				        end
+				    endcase
+
+				    oprand2 <= {{52{inst[31]}}, inst[31:25], inst[11:7]};
+				end
+				
+				`RISCV_OPCODE_LOAD: begin
+			        reg1_read_enable <= 1'b1;
+					reg2_read_enable <= 1'b0;
+					reg_write_enable_o <= 1'b1;
+					alusel_o <= 3'b0;
+					
+					if (reg_wr_enable_ex == 1'b1 && rs1 == reg_wr_addr_ex) begin
+						oprand1 <= reg_wr_data_ex;
+					end else if (reg_wr_enable_mem == 1'b1 && rs1 == reg_wr_addr_mem) begin
+						oprand1 <= reg_wr_data_mem;
+					end else begin
+						reg1_addr <= rs1;
+						oprand1 <= reg1_data;
+					end
+					
+				    mem_valid <= 1'b1;
+				    mem_rw <= 1'b0;
+				    case (funct3)
+				        3'b000: begin
+				            mem_data_byte_valid = 8'b00000001;
+				        end
+				        3'b001:begin
+				            mem_data_byte_valid = 8'b00000011;
+				        end
+				        3'b010:begin
+				            mem_data_byte_valid = 8'b00001111;
+				        end
+				        3'b011:begin
+				            mem_data_byte_valid = 8'b11111111;
+				        end
+				        default:begin
+				            mem_data_byte_valid = 8'b00000001;
+				        end
+				    endcase
+				    oprand2 <= {{52{inst[31]}}, inst[31:25], inst[11:7]};
+				end
+				default: begin
+				    // invalid instruction exception
 				end
 			endcase
 		end	

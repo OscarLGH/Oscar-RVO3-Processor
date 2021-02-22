@@ -14,14 +14,13 @@ module soc (
 	wire data_valid;
 	wire[63:0] data_addr;
 	wire[63:0] data;
-	wire CPU_RESET;
     wire ori_clk;
     
     assign data_addr = 64'b0;
     assign data = 64'b0;
     assign rw = 1'b0;
     assign data_valid = 1'b0;
-    assign outwire = data[0];
+    
 
     IBUFGDS clkgen(.O(ori_clk),.I(CLK_125_P),.IB(CLK_125_N));
 
@@ -39,10 +38,6 @@ module soc (
 //assign inst_addr = 64'b0;
 //assign inst_addr_valid = 1'b1;
 //assign CPU_RESET = 0;
-
-
-
-
 
 inst_rom bootroom (
 	.clk(clk),
@@ -62,10 +57,10 @@ cpu_core cpu_core (
 	.inst_mem_valid(inst_mem_valid),
 	.inst_mem_data(inst_data),
 	
-	.data_mem_rw(rw),
-	.data_mem_addr(data_addr),
-	.data_mem_valid(data_valid),
-	.data_mem_data(data)
+	.data_mem_rw(),
+	.data_mem_addr(),
+	.data_mem_valid(),
+	.data_mem_data()
 );
 
 endmodule
