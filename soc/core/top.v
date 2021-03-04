@@ -7,11 +7,13 @@ module cpu_core (
 	output wire inst_addr_valid,
 	input wire inst_mem_valid,
 	input wire[31:0] inst_mem_data,
-	
-	output wire data_mem_rw,
+
 	output wire[63:0] data_mem_addr,
-	input wire data_mem_valid,
-	output wire[63:0] data_mem_data
+	output wire data_mem_addr_valid,
+	output wire data_mem_rw,
+	output wire[63:0] data_mem_data_w,
+	input wire[63:0] data_mem_data_r,
+	input wire data_mem_ready
 );
 
 	wire [4:0] stall_req;
@@ -33,7 +35,7 @@ module cpu_core (
 		.rst(rst),
 		.stall(stall_pc),
 		.pc(inst_mem_addr),
-		.ce(inst_addr_valid),
+		.inst_addr_valid(inst_addr_valid),
 		.inst_mem(inst_mem_data),
 		.inst_out(inst)
 	);
@@ -198,15 +200,20 @@ module cpu_core (
 	mem mem(
 	    .clk(clk),
 	    .rst(rst),
-	    .mem_valid(mem_valid_mem),
-	    .mem_rw(mem_rw_mem),
+	    .ce(mem_valid_mem),
+	    .data_mem_rw(mem_rw_mem),
 	    .mem_data(mem_data_mem),
 	    .mem_data_byte_valid(mem_data_byte_valid_mem),
 	    .addr(result_mem),
-	    
+	    .data_mem_ready(data_mem_ready),
 	    .result(result_mem_1),
 	    .stall(stall_req[3])
 	);
+	
+	assign data_mem_rw = mem_rw_mem;
+	assign data_mem_addr = result_mem;
+	assign data_mem_data_w = mem_rw_mem ? mem_data_mem : 64'bz;
+	assign data_mem_addr_valid = mem_valid_mem & ~data_mem_ready;
 
 	mem_wb mem_wb_reg(
 		.clk(clk),
@@ -220,7 +227,7 @@ module cpu_core (
 		.reg_write_enable_o(reg_write_enable_wb)
 	);
 
-    ila_0 ila_debug (
+    ila_0 ila_core_pipeline (
         .clk(debug_clk), // input wire clk
         .probe0(clk),
         .probe1(rst),
@@ -263,13 +270,13 @@ module cpu_core (
         .probe38(result_wb),
         .probe39(reg_write_addr_wb),
         .probe40(reg_write_enable_wb),
-        .probe41(64'b0),
-        .probe42(64'b0),
-        .probe43(64'b0),
-        .probe44(64'b0),
-        .probe45(64'b0),
-        .probe46(64'b0),
-        .probe47(64'b0),
+        .probe41(data_mem_rw),
+        .probe42(data_mem_addr),
+        .probe43(data_mem_ready),
+        .probe44(stall_req),
+        .probe45(data_mem_data_w),
+        .probe46(data_mem_data_r),
+        .probe47(inst_addr_valid),
         .probe48(64'b0),
         .probe49(64'b0),
         .probe50(64'b0),

@@ -3,21 +3,21 @@ module pc_reg (
 	input wire rst,
 	input wire stall,
 	output reg[63:0] pc,
-	output reg ce,
+	output reg inst_addr_valid,
 	input wire[63:0] inst_mem,
 	output reg[31:0] inst_out
 );
 
-	always @ (posedge clk) begin
+	always @ (*) begin
 		if (rst == 1) begin
-			ce <= 0;
+			inst_addr_valid = 0;
 		end else begin
-			ce <= 1;
+			inst_addr_valid = 1;
 		end
 	end
 
 	always @ (posedge clk) begin
-		if (ce == 0 ) begin
+		if (inst_addr_valid == 1'b0) begin
 			pc <= 64'b0;
 		end else begin
 		    if (stall != 1'b1) begin

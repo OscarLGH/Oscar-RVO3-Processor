@@ -31,6 +31,9 @@ module ex (
 				`RISCV_ALU_AND: begin
 					result <= oprand1 & oprand2;
 				end
+				default: begin
+				    result <= 64'b0;
+				end
 			endcase
 		end
 	end
